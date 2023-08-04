@@ -131,14 +131,23 @@ def draw_board():
         pygame.draw.rect(WIN, BLACK, pygame.Rect(WIDTH // 16, (WIDTH // 16) * i - (GRID_WIDTH // 2), (WIDTH * 14) // 16, GRID_WIDTH))
     
     
-def draw_pieces(game_board):
+def draw_pieces(game_state):
+    game_board = game_state[1]
     for row in game_board:
         for piece in row:
             piece.draw()
 
+def draw_mouse(game_state):
+    turn = game_state[0]
+    if turn:
+        pygame.draw.circle(WIN, WHITE,  pygame.mouse.get_pos(), 10)
+    else:
+        pygame.draw.circle(WIN, BLACK,  pygame.mouse.get_pos(), 10)
+
 def draw(game_state):
     draw_board()
-    draw_pieces(game_state[1])
+    draw_pieces(game_state)
+    draw_mouse(game_state)
     pygame.display.update()
 
 
@@ -150,6 +159,7 @@ def main():
     game_state = (True, generate_new_board())
     while run:
         clock.tick(FPS)
+        pygame.mouse.set_visible(False)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -159,21 +169,21 @@ def main():
                 WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
                 pygame.display.update()
                 pygame.time.delay(5000)
-                pygame.quit()
+                main()
             if event.type == BLACK_WINS:
                 WIN.fill(BLACK)
                 END_TEXT = ENDSCREEN_FONT.render("Black Wins!", 1, WHITE)
                 WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
                 pygame.display.update()
                 pygame.time.delay(5000)
-                pygame.quit()
+                main()
             if event.type == DRAW:
                 WIN.fill(YELLOW)
                 END_TEXT = ENDSCREEN_FONT.render("Draw", 1, BLACK)
                 WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
                 pygame.display.update()
                 pygame.time.delay(5000)
-                pygame.quit()
+                main()
         game_state = calculate_move(game_state)
         if check_win(game_state) == Player.WHITE_PLAYER:
             pygame.event.post(pygame.event.Event(WHITE_WINS))
