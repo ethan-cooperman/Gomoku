@@ -1,5 +1,6 @@
 import pygame
 from enum import Enum
+from Button import Button
 pygame.init()
 
 
@@ -19,7 +20,9 @@ WOOD_PICTURE = pygame.image.load('Assets/wooden_background.jpeg')
 BACKGROUND = pygame.transform.scale(WOOD_PICTURE, (WIDTH, WIDTH))
 HIGHLIGHT_PICTURE = pygame.image.load('Assets/light-alpha-gradient-transparency-and-translucency-web-browser-luz-9c61015f077b3ac9d8000909ca2f0115.png')
 HIGHLIGHT = pygame.transform.scale(HIGHLIGHT_PICTURE, (WIDTH // 30,WIDTH // 30))
-ENDSCREEN_FONT = pygame.font.SysFont('timesnewroman', 100, True)
+ENDSCREEN_FONT = pygame.font.SysFont('timesnewroman', WIDTH // 15, True)
+STARTUP_FONT = pygame.font.SysFont('helveticaneue', WIDTH // 15, True, True)
+
 
 ## EVENTS ##
 WHITE_WINS = pygame.USEREVENT + 1
@@ -70,9 +73,9 @@ class Intersection:
         if self.state == None and self.is_mouse_hov():
             WIN.blit(HIGHLIGHT, (self.x - HIGHLIGHT.get_width() // 2, self.y - HIGHLIGHT.get_height() // 2))
         elif self.state == Player.WHITE_PLAYER:
-            pygame.draw.circle(WIN, WHITE, (self.x, self.y), 15)
+            pygame.draw.circle(WIN, WHITE, (self.x, self.y), WIDTH // 48)
         elif self.state == Player.BLACK_PLAYER:
-            pygame.draw.circle(WIN, BLACK, (self.x, self.y), 15)
+            pygame.draw.circle(WIN, BLACK, (self.x, self.y), WIDTH // 48)
 
 def calculate_move(game_state):
     turn, game_board = game_state
@@ -117,6 +120,65 @@ def check_draw(game_state):
             if intersection.state == None:
                 return False
     return True
+
+def game_loop(clock, game_state):
+    run = True
+    while run:
+        clock.tick(FPS)
+        pygame.mouse.set_visible(False)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == WHITE_WINS:
+                WIN.fill(WHITE)
+                END_TEXT = ENDSCREEN_FONT.render("White Wins!", 1, BLACK)
+                WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
+                pygame.display.update()
+                pygame.time.delay(3000)
+                main()
+            if event.type == BLACK_WINS:
+                WIN.fill(BLACK)
+                END_TEXT = ENDSCREEN_FONT.render("Black Wins!", 1, WHITE)
+                WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
+                pygame.display.update()
+                pygame.time.delay(3000)
+                main()
+            if event.type == DRAW:
+                WIN.fill(YELLOW)
+                END_TEXT = ENDSCREEN_FONT.render("Draw", 1, BLACK)
+                WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
+                pygame.display.update()
+                pygame.time.delay(3000)
+                main()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    pause(clock, game_state)
+        game_state = calculate_move(game_state)
+        if check_win(game_state) == Player.WHITE_PLAYER:
+            pygame.event.post(pygame.event.Event(WHITE_WINS))
+        elif check_win(game_state) == Player.BLACK_PLAYER:
+            pygame.event.post(pygame.event.Event(BLACK_WINS))
+        elif check_draw(game_state):
+            pygame.event.post(pygame.event.Event(DRAW))
+        draw(game_state)
+
+    pygame.quit()
+
+def pause(clock, game_state):
+    pause = True
+    while pause:
+        clock.tick(FPS)
+        pygame.mouse.set_visible(False)
+        keys_pressed = pygame.key.get_pressed()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    pause = False
+        WIN.blit(BACKGROUND, (0, 0))
+        pygame.display.update()
+    game_loop(clock, game_state)
                 
 ## DRAW METHODS ##
 def draw_board():
@@ -140,9 +202,9 @@ def draw_pieces(game_state):
 def draw_mouse(game_state):
     turn = game_state[0]
     if turn:
-        pygame.draw.circle(WIN, WHITE,  pygame.mouse.get_pos(), 10)
+        pygame.draw.circle(WIN, WHITE,  pygame.mouse.get_pos(), WIDTH // 72)
     else:
-        pygame.draw.circle(WIN, BLACK,  pygame.mouse.get_pos(), 10)
+        pygame.draw.circle(WIN, BLACK,  pygame.mouse.get_pos(), WIDTH // 72)
 
 def draw(game_state):
     draw_board()
@@ -150,50 +212,35 @@ def draw(game_state):
     draw_mouse(game_state)
     pygame.display.update()
 
+def start_up():
+    WIN.blit(BACKGROUND, (0, 0))
+    START_TEXT = STARTUP_FONT.render("Gomoku", 1, WHITE)
+    WIN.blit(START_TEXT, (WIDTH // 2 - START_TEXT.get_width() // 2, WIDTH // 4))
+    start_button = Button(WIN, 'Assets/start_button_image.png', WIDTH // 2 - WIDTH // 3, WIDTH // 2 - WIDTH // 8, 2 * WIDTH // 3, WIDTH // 4, 'Assets/start_button_on_hover.png')
+    start_button.draw()
+    pygame.display.update()
+    return start_button.is_clicked_on()
 
+def loading_screen():
+    WIN.blit(BACKGROUND, (0, 0))
+    LOADING_TEXT = STARTUP_FONT.render("Loading...", 1, WHITE)
+    WIN.blit(LOADING_TEXT, (WIDTH // 2 - LOADING_TEXT.get_width() // 2, WIDTH // 2 - LOADING_TEXT.get_height() // 2))
+    pygame.display.update()
+    pygame.time.delay(1000)
 
 ## MAIN METHOD ##
 def main():
     clock = pygame.time.Clock()
-    run = True
     game_state = (True, generate_new_board())
-    while run:
-        clock.tick(FPS)
-        pygame.mouse.set_visible(False)
+    start = False
+    pygame.mouse.set_visible(True)
+    while not start:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
-            if event.type == WHITE_WINS:
-                WIN.fill(WHITE)
-                END_TEXT = ENDSCREEN_FONT.render("White Wins!", 1, BLACK)
-                WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
-                pygame.display.update()
-                pygame.time.delay(5000)
-                main()
-            if event.type == BLACK_WINS:
-                WIN.fill(BLACK)
-                END_TEXT = ENDSCREEN_FONT.render("Black Wins!", 1, WHITE)
-                WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
-                pygame.display.update()
-                pygame.time.delay(5000)
-                main()
-            if event.type == DRAW:
-                WIN.fill(YELLOW)
-                END_TEXT = ENDSCREEN_FONT.render("Draw", 1, BLACK)
-                WIN.blit(END_TEXT, (WIDTH // 2 - END_TEXT.get_width() // 2, WIDTH // 2 - END_TEXT.get_height() // 2))
-                pygame.display.update()
-                pygame.time.delay(5000)
-                main()
-        game_state = calculate_move(game_state)
-        if check_win(game_state) == Player.WHITE_PLAYER:
-            pygame.event.post(pygame.event.Event(WHITE_WINS))
-        elif check_win(game_state) == Player.BLACK_PLAYER:
-            pygame.event.post(pygame.event.Event(BLACK_WINS))
-        elif check_draw(game_state):
-            pygame.event.post(pygame.event.Event(DRAW))
-        draw(game_state)
-
-    pygame.quit()
+                pygame.quit()
+        start = start_up()
+    loading_screen()
+    game_loop(clock, game_state)
 
 if __name__ == '__main__':
     main()
