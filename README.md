@@ -1,1 +1,1 @@
-A basic Gomoku game written in Pygame. Run main.py to start!
+A basic offline Gomoku game written in Pygame. Run main.py to start!
